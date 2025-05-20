@@ -6,7 +6,6 @@ import {
   debounceTime,
   distinctUntilChanged,
   map,
-  shareReplay,
   startWith,
   switchMap,
   takeUntil,
