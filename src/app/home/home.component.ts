@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import { Course } from "../model/course";
-import { interval, noop, Observable, of, Subject, timer } from 'rxjs';
-import { catchError, delayWhen, filter, map, retryWhen, shareReplay, takeUntil, tap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
+import { Component, OnInit } from '@angular/core';
+import { noop, Observable, of, Subject } from 'rxjs';
+import { map, shareReplay, takeUntil, tap } from 'rxjs/operators';
+import { Course } from "../model/course";
 
 
 @Component({
