@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Course } from "../model/course";
 import { interval, noop, Observable, of, Subject, timer } from 'rxjs';
-import { catchError, delayWhen, map, retryWhen, shareReplay, takeUntil, tap } from 'rxjs/operators';
+import { catchError, delayWhen, filter, map, retryWhen, shareReplay, takeUntil, tap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 
 
@@ -22,13 +22,36 @@ export class HomeComponent implements OnInit {
   public beginnerCourses: Course[] = [];
   public advancedCourses: Course[] = [];
 
+  // Courses as observables
+  public beginnerCourses$: Observable<Course[]> = of([]);
+  public advancedCourses$: Observable<Course[]> = of([]);
+
   constructor(private http: HttpClient) { }
 
   ngOnInit() {
     // Call the httpClientData method to fetch data from the server (Common use case)
-    this.httpClientData();
-  }
+    this.httpClientData(
+      (course: Course) => course.category === 'BEGINNER', // Filter function for beginner courses
+      this.beginnerCourses // Array to store beginner courses
+    );
 
+    this.httpClientData(
+      (course: Course) => course.category === 'ADVANCED', // Filter function for advanced courses
+      this.advancedCourses // Array to store advanced courses
+    );
+
+    // Create an observable for beginner courses
+    this.beginnerCourses$ = this.createObservable()
+      .pipe(
+        map((courses: Course[]) => courses.filter(course => course.category === 'BEGINNER')), // Filter for beginner courses
+      );
+
+    // Create an observable for advanced courses
+    this.advancedCourses$ = this.createObservable()
+      .pipe(
+        map((courses: Course[]) => courses.filter(course => course.category === 'ADVANCED')), // Filter for advanced courses
+      );
+  }
 
   ngOnDestroy() {
     // Unsubscribe from the observables to prevent memory leaks
@@ -37,29 +60,25 @@ export class HomeComponent implements OnInit {
   }
 
   // Fetch data from a URL (localhost:9000/api/courses)
-  httpClientData() {
-    this.http.get(this.url)
-      .pipe(
-        takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
-        map((response: any) => response.payload) // Map the response to the desired format
-      )
+  httpClientData(filterFn: (course: Course) => boolean = () => true, courses: Course[] = []) {
+    this.createObservable()
+      .pipe(map((courses: Course[]) => courses.filter(filterFn)))  // Filter the courses based on the provided filter function
       .subscribe(
-        (data) => this.handleResponse(data), // Handle the response data
+        (filteredCourses: Course[]) => {
+          courses.length = 0; // Clear the existing courses (reuse the same reference)
+          courses.push(...filteredCourses); // Push the filtered courses into the array
+        },
         noop, // No operation (do nothing) on error
         () => console.log('HTTP request completed') // Log when the observable completes
       );
   }
 
-  // Handle successful response
-  handleResponse(response: any) {
-    // Map the response to the desired format
-    const courses: Course[] = response;
-
-    // Filter the courses into beginner and advanced categories
-    this.beginnerCourses = courses.filter((course) => course.category === 'BEGINNER');
-    this.advancedCourses = courses.filter((course) => course.category === 'ADVANCED');
-
-    console.log('Beginner Courses:', this.beginnerCourses);
-    console.log('Advanced Courses:', this.advancedCourses);
+  // Create an observable that make the request and return courses observable
+  createObservable(): Observable<Course[]> {
+    return this.http.get(this.url)
+      .pipe(
+        takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
+        map((response: any) => response.payload), // Map the response to the desired format
+      );
   }
 }
