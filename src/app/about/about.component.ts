@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { from, fromEvent, noop, Observable, Subject, timer } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { map, takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'about', // Selector for the component
@@ -58,7 +58,10 @@ export class AboutComponent implements OnInit, OnDestroy {
   // Fetch data from a URL (localhost:9000/api/courses)
   httpClientData() {
     this.http.get(this.url)
-      .pipe(takeUntil(this.destroy$)) // Unsubscribe when the component is destroyed
+      .pipe(
+        takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
+        map((response: any) => response.payload) // Map the response to the desired format
+      )
       .subscribe(
         (data) => console.log('Data fetched:', data), // Log the fetched data
         (error) => console.error('Error fetching data:', error), // Log any error that occurs
@@ -70,7 +73,10 @@ export class AboutComponent implements OnInit, OnDestroy {
   fetchData() {
     // For study purposes, you can create an observable that call fetch (js) to fetch data
     from(fetch(this.url).then((response) => response.json())) // Parse the response as JSON
-      .pipe(takeUntil(this.destroy$)) // Unsubscribe when the component is destroyed
+      .pipe(
+        takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
+        map((response: any) => response.payload) // Map the response to the desired format
+      )
       .subscribe(
         (response) => console.log('Fetch response:', response), // Log the fetch response
         (error) => console.error('Error fetching data:', error), // Log any error that occurs
@@ -96,7 +102,10 @@ export class AboutComponent implements OnInit, OnDestroy {
 
     // Subscribe to the observable
     observable$
-      .pipe(takeUntil(this.destroy$)) // Unsubscribe when the component is destroyed
+      .pipe(
+        takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
+        map((response: any) => response.payload) // Map the response to the desired format
+      )
       .subscribe(
         (value) => console.log('Observable value:', value), // Log the emitted value
         noop, // No operation (do nothing) on error
