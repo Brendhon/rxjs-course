@@ -23,6 +23,7 @@ export class HomeComponent implements OnInit {
   public advancedCourses: Course[] = [];
 
   // Courses as observables
+  public courses$: Observable<Course[]>;
   public beginnerCourses$: Observable<Course[]> = of([]);
   public advancedCourses$: Observable<Course[]> = of([]);
 
@@ -30,24 +31,27 @@ export class HomeComponent implements OnInit {
 
   ngOnInit() {
     // Call the httpClientData method to fetch data from the server (Common use case)
-    this.httpClientData(
-      (course: Course) => course.category === 'BEGINNER', // Filter function for beginner courses
-      this.beginnerCourses // Array to store beginner courses
-    );
+    // this.httpClientData(
+    //   (course: Course) => course.category === 'BEGINNER', // Filter function for beginner courses
+    //   this.beginnerCourses // Array to store beginner courses
+    // );
 
-    this.httpClientData(
-      (course: Course) => course.category === 'ADVANCED', // Filter function for advanced courses
-      this.advancedCourses // Array to store advanced courses
-    );
+    // this.httpClientData(
+    //   (course: Course) => course.category === 'ADVANCED', // Filter function for advanced courses
+    //   this.advancedCourses // Array to store advanced courses
+    // );
+
+    // Create an unique observable for all courses
+    this.courses$ = this.createObservable();
 
     // Create an observable for beginner courses
-    this.beginnerCourses$ = this.createObservable()
+    this.beginnerCourses$ = this.courses$
       .pipe(
         map((courses: Course[]) => courses.filter(course => course.category === 'BEGINNER')), // Filter for beginner courses
       );
 
     // Create an observable for advanced courses
-    this.advancedCourses$ = this.createObservable()
+    this.advancedCourses$ = this.courses$
       .pipe(
         map((courses: Course[]) => courses.filter(course => course.category === 'ADVANCED')), // Filter for advanced courses
       );
@@ -62,7 +66,9 @@ export class HomeComponent implements OnInit {
   // Fetch data from a URL (localhost:9000/api/courses)
   httpClientData(filterFn: (course: Course) => boolean = () => true, courses: Course[] = []) {
     this.createObservable()
-      .pipe(map((courses: Course[]) => courses.filter(filterFn)))  // Filter the courses based on the provided filter function
+      .pipe(
+        map((courses: Course[]) => courses.filter(filterFn)),
+      )  // Filter the courses based on the provided filter function
       .subscribe(
         (filteredCourses: Course[]) => {
           courses.length = 0; // Clear the existing courses (reuse the same reference)
@@ -77,8 +83,10 @@ export class HomeComponent implements OnInit {
   createObservable(): Observable<Course[]> {
     return this.http.get(this.url)
       .pipe(
+        tap(() => console.log('HTTP request executed')), // Log the response
         takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
         map((response: any) => response.payload), // Map the response to the desired format
+        shareReplay(), // Share the last emitted value with new subscribers
       );
   }
 }
