@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { from, noop, Observable, Subject } from 'rxjs';
+import { concat, from, noop, Observable, of, Subject } from 'rxjs';
 import { map, takeUntil } from 'rxjs/operators';
 
 @Component({
@@ -39,14 +39,30 @@ export class AboutComponent implements OnInit, OnDestroy {
     //     () => console.log('Completed') // Log when the observable completes
     //   );
 
-    // Call the httpClientData method to fetch data from the server (Common use case)
-    this.httpClientData();
+    // // Call the httpClientData method to fetch data from the server (Common use case)
+    // this.httpClientData();
 
-    // Call the fetchData method to fetch data from the server (For study purposes)
-    this.fetchData();
+    // // Call the fetchData method to fetch data from the server (For study purposes)
+    // this.fetchData();
 
-    // Call the createObservable method to create an observable (For study purposes)
-    this.createObservable();
+    // // Call the createObservable method to create an observable (For study purposes)
+    // this.createObservable();
+
+    const sourse$1 = of(1, 2, 3, 4, 5); // Create an observable that emits values 1 to 5
+
+    const sourse$2 = of(6, 7, 8, 9, 10); // Create another observable that emits values 6 to 10
+
+    // Concatenate the two observables
+    const concatenated$ = concat(sourse$1, sourse$2);
+
+    // Subscribe to the concatenated observable
+    concatenated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (value) => console.log('Concatenated value:', value), // Log the emitted value
+        (error) => console.error('Error:', error), // Log any error that occurs
+        () => console.log('Concatenation completed') // Log when the observable completes
+      );
   }
 
   ngOnDestroy() {

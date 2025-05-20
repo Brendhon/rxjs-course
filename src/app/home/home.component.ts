@@ -86,7 +86,7 @@ export class HomeComponent implements OnInit {
         tap(() => console.log('HTTP request executed')), // Log the response
         takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
         map((response: any) => response.payload), // Map the response to the desired format
-        shareReplay(), // Share the last emitted value with new subscribers
+        shareReplay(), // Share the response with multiple subscribers
       );
   }
 }
