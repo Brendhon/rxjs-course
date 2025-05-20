@@ -1,63 +1,73 @@
-import {AfterViewInit, Component, ElementRef, Inject, OnInit, ViewChild, ViewEncapsulation} from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { AfterViewInit, Component, ElementRef, Inject, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import {Course} from "../model/course";
-import {FormBuilder, Validators, FormGroup} from "@angular/forms";
 import moment from 'moment';
-import {fromEvent} from 'rxjs';
-import {concatMap, distinctUntilChanged, exhaustMap, filter, mergeMap} from 'rxjs/operators';
-import {fromPromise} from 'rxjs/internal-compatibility';
+import { concatMap, debounceTime, distinctUntilChanged, filter } from 'rxjs/operators';
+import { Course } from "../model/course";
 
 @Component({
-    selector: 'course-dialog',
-    templateUrl: './course-dialog.component.html',
-    styleUrls: ['./course-dialog.component.css'],
-    standalone: false
+  selector: 'course-dialog',
+  templateUrl: './course-dialog.component.html',
+  styleUrls: ['./course-dialog.component.css'],
+  standalone: false
 })
 export class CourseDialogComponent implements OnInit, AfterViewInit {
 
-    form: FormGroup;
-    course:Course;
+  form: FormGroup;
+  course: Course;
 
-    @ViewChild('saveButton', { static: true }) saveButton: ElementRef;
+  @ViewChild('saveButton', { static: true }) saveButton: ElementRef;
 
-    @ViewChild('searchInput', { static: true }) searchInput : ElementRef;
+  @ViewChild('searchInput', { static: true }) searchInput: ElementRef;
 
-    constructor(
-        private fb: FormBuilder,
-        private dialogRef: MatDialogRef<CourseDialogComponent>,
-        @Inject(MAT_DIALOG_DATA) course:Course ) {
+  constructor(
+    private http: HttpClient,
+    private fb: FormBuilder,
+    private dialogRef: MatDialogRef<CourseDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) course: Course) {
 
-        this.course = course;
+    this.course = course;
 
-        this.form = fb.group({
-            description: [course.description, Validators.required],
-            category: [course.category, Validators.required],
-            releasedAt: [moment(), Validators.required],
-            longDescription: [course.longDescription,Validators.required]
-        });
+    this.form = fb.group({
+      description: [course.description, Validators.required],
+      category: [course.category, Validators.required],
+      releasedAt: [moment(), Validators.required],
+      longDescription: [course.longDescription, Validators.required]
+    });
 
-    }
+  }
 
-    ngOnInit() {
+  ngOnInit() {
+
+    this.form.valueChanges
+      .pipe(
+        filter(() => this.form.valid), // Only emit when the form is valid
+        debounceTime(300), // Wait for 300ms pause in events before emitting the last event
+        distinctUntilChanged(), // Only emit when the value has changed
+        concatMap(() => { // Use concatMap to handle the emitted value 
+          return this.save();
+        })
+      )
+      .subscribe(console.log); // Log the emitted value
+
+  }
 
 
 
-    }
+  ngAfterViewInit() {
+
+
+  }
 
 
 
-    ngAfterViewInit() {
+  close() {
+    this.dialogRef.close();
+  }
 
-
-    }
-
-
-
-    close() {
-        this.dialogRef.close();
-    }
-
-  save() {
-
+  save(changes: Partial<Course> = {}) {
+    const url = 'http://localhost:9000/api/courses' + '/' + this.course.id;
+    return this.http.put(url, changes)
   }
 }
