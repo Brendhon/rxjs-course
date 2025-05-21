@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from "@angular/router";
-import { fromEvent, Observable, of, Subject } from 'rxjs';
+import { forkJoin, fromEvent, Observable, of, Subject } from 'rxjs';
 import {
   debounceTime,
   distinctUntilChanged,
@@ -43,8 +43,22 @@ export class CourseComponent implements OnInit, AfterViewInit {
     // Get the course id from the route parameters
     this.courseId = this.route.snapshot.params['id'];
 
-    // Create an observable for the lessons
-    this.course$ = this.createObservable<Course>('/api/courses/' + this.courseId)
+    // Join the course and lessons observables
+    forkJoin([this.createObservable<Course>('/api/courses/' + this.courseId), this.getLessons()])
+      .pipe(
+        takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
+        tap(([course, lessons]) => {
+          console.log('Course:', course); // Log the course
+          console.log('Lessons:', lessons); // Log the lessons
+        })
+      ).subscribe(
+        ([course, lessons]) => {
+          this.course$ = of(course); // Update the course observable with the new value
+          this.lessons$ = of(lessons); // Update the lessons observable with the new value
+        },
+        (error) => console.error('Error fetching course and lessons:', error), // Log any errors
+        () => console.log('Course and lessons fetched successfully') // Log success message
+      );
   }
 
   ngAfterViewInit() {
@@ -53,7 +67,7 @@ export class CourseComponent implements OnInit, AfterViewInit {
       .pipe(
         takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
         map((event: any) => event.target.value), // Get the value of the input
-        startWith(''), // Start with an empty string (initial value)
+        // startWith(''), // Start with an empty string (initial value)
         debounceTime(200), // Wait for 300ms before emitting the value
         distinctUntilChanged(), // Only emit if the value has changed
         debug('Search input changed'), // Log the input value
