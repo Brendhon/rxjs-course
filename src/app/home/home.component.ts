@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
-import { noop, Observable, of, Subject, throwError } from 'rxjs';
-import { catchError, map, shareReplay, takeUntil, tap } from 'rxjs/operators';
+import { noop, Observable, of, Subject, throwError, timer } from 'rxjs';
+import { catchError, delay, delayWhen, map, retryWhen, shareReplay, take, takeUntil, tap } from 'rxjs/operators';
 import { Course } from "../model/course";
 
 
@@ -89,9 +89,13 @@ export class HomeComponent implements OnInit {
     return this.http.get(this.url)
       .pipe(
         takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
-        catchError(() => {
-          console.log('Error occurred while fetching courses');
-          return of([]); // Return an empty array in case of error
+        retryWhen(errors => {
+          return errors.pipe(
+            tap(() => console.log('Retrying in 2 seconds...')), // Log when retrying
+            delayWhen(() => timer(2000)), // Delay the retry by 2 seconds
+            take(3), // Retry 3 times
+            tap(() => console.log('Retry attempts exhausted')) // Log when retry attempts are exhausted
+          );
         }),
         tap(() => console.log('HTTP request executed')), // Log the response
         map((response: any) => response.payload), // Map the response to the desired format
