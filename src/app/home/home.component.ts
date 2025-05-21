@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
-import { noop, Observable, of, Subject } from 'rxjs';
-import { map, shareReplay, takeUntil, tap } from 'rxjs/operators';
+import { noop, Observable, of, Subject, throwError } from 'rxjs';
+import { catchError, map, shareReplay, takeUntil, tap } from 'rxjs/operators';
 import { Course } from "../model/course";
 
 
@@ -67,6 +67,11 @@ export class HomeComponent implements OnInit {
   httpClientData(filterFn: (course: Course) => boolean = () => true, courses: Course[] = []) {
     this.createObservable()
       .pipe(
+        takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
+        catchError(() => {
+          console.log('Error occurred while fetching courses');
+          return throwError('Error occurred while fetching courses'); // Return an error observable
+        }),
         map((courses: Course[]) => courses.filter(filterFn)),
       )  // Filter the courses based on the provided filter function
       .subscribe(
@@ -83,10 +88,16 @@ export class HomeComponent implements OnInit {
   createObservable(): Observable<Course[]> {
     return this.http.get(this.url)
       .pipe(
-        tap(() => console.log('HTTP request executed')), // Log the response
         takeUntil(this.destroy$), // Unsubscribe when the component is destroyed
+        catchError(() => {
+          console.log('Error occurred while fetching courses');
+          return of([]); // Return an empty array in case of error
+        }),
+        tap(() => console.log('HTTP request executed')), // Log the response
         map((response: any) => response.payload), // Map the response to the desired format
-        shareReplay(), // Share the response with multiple subscribers
+        shareReplay({
+          refCount: true, // Reconnect to the source observable when there are subscribers
+        }), // Share the response with multiple subscribers
       );
   }
 }
