@@ -13,6 +13,7 @@ import {
 } from 'rxjs/operators';
 import { Course } from "../model/course";
 import { Lesson } from '../model/lesson';
+import { debug } from '../common/debug';
 
 
 @Component({
@@ -55,7 +56,7 @@ export class CourseComponent implements OnInit, AfterViewInit {
         startWith(''), // Start with an empty string (initial value)
         debounceTime(200), // Wait for 300ms before emitting the value
         distinctUntilChanged(), // Only emit if the value has changed
-        tap((e) => console.log('Search input changed', e)), // Log the input change
+        debug('Search input changed'), // Log the input value
         switchMap((searchTerm: string) => this.getLessons(searchTerm)) // Call the getLessons function with the search term
       ).subscribe(
         (lessons: Lesson[]) => this.lessons$ = of(lessons), // Update the lessons observable with the new value
