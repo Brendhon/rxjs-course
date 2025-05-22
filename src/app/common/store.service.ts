@@ -2,7 +2,7 @@
 
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, from, Observable, throwError } from 'rxjs';
-import { first, map, tap } from 'rxjs/operators';
+import { filter, first, map, tap } from 'rxjs/operators';
 import { Course } from '../model/course';
 import { createHttpObservable } from './util';
 
@@ -51,8 +51,12 @@ export class StoreService {
   }
 
   // Get course by ID
-  public getCourseById(id: number): Course {
-    return this.subject.getValue().find(course => course.id == id);
+  public getCourseById(id: number): Observable<Course> {
+    return this.courses$.pipe(
+      map(courses => courses.find(course => course.id == id)), // Find the course by ID
+      filter(course => !!course), // Filter out undefined values
+      first() // Get the first value
+    );
   }
 
   // Get current courses
@@ -68,14 +72,11 @@ export class StoreService {
     // Get the current course index
     const index = courses.findIndex(course => course.id == id);
 
-    console.log('Index:', index);
-
     // Check if course exists
     if (index == -1) return throwError(() => new Error('Course not found'));
 
     // Create a new course object
-    const course = courses[index];
-    const updatedCourse = { ...course, ...changes };
+    const updatedCourse = { ...courses[index], ...changes };
 
     // Create a new array of courses
     const updatedCourses = [...courses];
